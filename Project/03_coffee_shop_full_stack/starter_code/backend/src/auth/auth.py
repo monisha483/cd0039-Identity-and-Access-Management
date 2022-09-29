@@ -1,5 +1,5 @@
 import json
-from flask import request, _request_ctx_stack
+from flask import request, _request_ctx_stack, abort
 from functools import wraps
 from jose import jwt
 from urllib.request import urlopen
@@ -16,6 +16,7 @@ A standardized way to communicate auth failure modes
 '''
 class AuthError(Exception):
     def __init__(self, error, status_code):
+        print("exception!!")
         self.error = error
         self.status_code = status_code
 
@@ -33,25 +34,30 @@ class AuthError(Exception):
 def get_token_auth_header():
     auth = request.headers.get('Authorization', None)
     if not auth:
-        raise AuthError({
-            'code': 'authorization_header_missing',
-            'description': 'Authorization header is expected.'
-        }, 401)
+        print("line!! 37")
+        abort(401)
+        # raise AuthError({
+        #     'code': 'authorization_header_missing',
+        #     'description': 'Authorization header is expected.'
+        # }, 401)
 
     parts = auth.split()
     if parts[0].lower() != 'bearer':
+        print("!!! parts[0].lower() != beare")
         raise AuthError({
             'code': 'invalid_header',
             'description': 'Authorization header must start with "Bearer".'
         }, 401)
 
     elif len(parts) == 1:
+        print("!!! len(parts) == 1")
         raise AuthError({
             'code': 'invalid_header',
             'description': 'Token not found.'
         }, 401)
 
     elif len(parts) > 2:
+        print("!!! len(parts) > 2")
         raise AuthError({
             'code': 'invalid_header',
             'description': 'Authorization header must be bearer token.'
@@ -73,7 +79,8 @@ def get_token_auth_header():
     return true otherwise
 '''
 def check_permissions(permission, payload):
-    print('in ck perm!!', payload)
+    print('in ck perm payload!!')
+   # print('in ck perm permission!!', permission)
     if 'permissions' not in payload:
                         raise AuthError({
                             'code': 'invalid_claims',
@@ -81,10 +88,12 @@ def check_permissions(permission, payload):
                         }, 400)
 
     if permission not in payload['permissions']:
-        raise AuthError({
-            'code': 'unauthorized',
-            'description': 'Permission not found.'
-        }, 403)
+        print('!!permission not in payload!! abort 403')
+        abort(403)
+        # raise AuthError({
+        #     'code': 'unauthorized',
+        #     'description': 'Permission not found.'
+        # }, 403)
     print('returning True!')
     return True
 
@@ -108,13 +117,17 @@ def verify_decode_jwt(token):
     print("!!unverified_header ", unverified_header)
     rsa_key = {}
     if 'kid' not in unverified_header:
+        print("!! kid  not in unverified_header!!")
         raise AuthError({
             'code': 'invalid_header',
             'description': 'Authorization malformed.'
         }, 401)
 
+    #print("jwks['keys']@@@@@@@", jwks['keys'])
     for key in jwks['keys']:
+        print("key['kid'] of jwks@@@@", key['kid'])
         if key['kid'] == unverified_header['kid']:
+            print('key match!!!!!!')
             rsa_key = {
                 'kty': key['kty'],
                 'kid': key['kid'],
@@ -131,7 +144,7 @@ def verify_decode_jwt(token):
                 audience=API_AUDIENCE,
                 issuer='https://' + AUTH0_DOMAIN + '/'
             )
-
+            print("!!payload ", payload)
             return payload
 
         except jwt.ExpiredSignatureError:

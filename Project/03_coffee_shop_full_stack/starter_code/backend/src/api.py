@@ -33,10 +33,7 @@ def get_drinks():
     drink_selection = Drink.query.order_by(Drink.id).all()
     if(len(drink_selection)==0):
         abort(404)
-    drinkDict = {}
-    for drink in drink_selection:
-        drinkDict[drink.id] = drink.short()
-    return jsonify({"success": True, "drinks": drinkDict})
+    return jsonify({"success": True, "drinks": [drink.short() for drink in drink_selection]})
     
 
 
@@ -54,10 +51,10 @@ def get_drinks_details(self):
     drink_selection = Drink.query.order_by(Drink.id).all()
     if(len(drink_selection)==0):
         abort(404)
-    drinkDict = {}
-    for drink in drink_selection:
-        drinkDict[drink.id] = drink.long()
-    return jsonify({"success": True, "drinks": drinkDict})
+    # drinkDict = {}
+    # for drink in drink_selection:
+    #     drinkDict[drink.id] = drink.long()
+    return jsonify({"success": True, "drinks": [drink.long() for drink in drink_selection]})
     
 
 '''
@@ -71,7 +68,7 @@ def get_drinks_details(self):
 '''
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def insert_drink():
+def insert_drink(self):
     print('hi')
     body = request.get_json()
     print('body')
@@ -90,6 +87,7 @@ def insert_drink():
     except Exception:
         abort(422)
 
+    
 '''
 @TODO implement endpoint
     PATCH /drinks/<id>
@@ -102,10 +100,13 @@ def insert_drink():
         or appropriate status code indicating reason for failure
 '''
 @app.route('/drinks/<int:id>', methods=['PATCH'])
-def update_drink(id):
+@requires_auth('patch:drinks')
+def update_drink(self, id):
+    print("update_drink!!")
     drink = Drink.query.get(id)
+    print("patch drink!!", drink)
     if(drink is None):
-        abort(404)
+        abort(401)
     body = request.get_json()
     print('body')
     new_recipe = body.get('recipe', None)
@@ -117,7 +118,7 @@ def update_drink(id):
         print('drink ', drink)
         drink.update()
         print('inserted!', drink.long())
-        return jsonify({"success": True, "drinks": drink.long()})
+        return jsonify({"success": True, "drinks": [drink.long()]})
     except Exception:
         abort(422)
     
@@ -132,11 +133,13 @@ def update_drink(id):
     returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
         or appropriate status code indicating reason for failure
 '''
+
 @app.route('/drinks/<int:id>', methods=['DELETE'])
-def delete_drink(id):
+@requires_auth('delete:drinks')
+def delete_drink(self, id):
     drink = Drink.query.get(id)
     if(drink is None):
-        abort(404)
+        abort(401)
     try:
         drink.delete()
         print('deleted!')
